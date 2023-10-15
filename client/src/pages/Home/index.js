@@ -1,30 +1,56 @@
-import React from "react";
+import React, { useEffect } from "react";
 // chakra-ui
-import { VStack, Box, Flex, Heading, Text, Spinner } from "@chakra-ui/react";
+import {
+  VStack,
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Spinner,
+  Center,
+  Spacer,
+} from "@chakra-ui/react";
 // Apollo Client
 import { useQuery } from "@apollo/client";
-import { GET_EVENTS } from "./queries";
+import { GET_EVENTS, EVENTS_SUBSCRIPTION } from "./queries";
 // React Router
 import { Link } from "react-router-dom";
 
 function Home() {
-  const { loading, error, data } = useQuery(GET_EVENTS);
+  const { loading, error, data, subscribeToMore } = useQuery(GET_EVENTS);
+
+  useEffect(() => {
+    if (!loading) {
+      subscribeToMore({
+        document: EVENTS_SUBSCRIPTION,
+        updateQuery: (prev, { subscriptionData }) => {
+          if (!subscriptionData.data) return prev;
+          return {
+            events: [subscriptionData.data.eventCreated, ...prev.events],
+          };
+        },
+      });
+    }
+  }, [loading, subscribeToMore]);
 
   if (loading) {
     return (
-      <Spinner
-        thickness="4px"
-        speed="0.65s"
-        emptyColor="gray.200"
-        color="blue.500"
-        size="xl"
-      />
+      <Center>
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="blue.500"
+          size="xl"
+        />
+      </Center>
     );
   }
+
   if (error) return <div>{`Error! ${error.message}`}</div>;
 
   return (
-    <VStack spacing={4} align="stretch" w="600px">
+    <VStack spacing={4} align="stretch">
       <Heading as="h3" size="lg">
         Event List
       </Heading>
@@ -38,16 +64,13 @@ function Home() {
             rounded="md"
           >
             <Flex>
-              <Box w="515px">
-                <Heading as="h5" size="sm">
-                  {event.title}
-                </Heading>
-              </Box>
-              <Box w="65px">
-                <Text fontSize="xs" align={"right"}>
-                  {event.date.replaceAll("-", ".")}
-                </Text>
-              </Box>
+              <Heading as="h5" size="sm">
+                {event.title}
+              </Heading>
+              <Spacer />
+              <Text fontSize="xs" align={"right"}>
+                {event.date.replaceAll("-", ".")}
+              </Text>
             </Flex>
             <Box>
               <Text fontSize="xs">{event.desc.slice(0, 130)}...</Text>

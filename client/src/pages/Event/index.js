@@ -1,61 +1,72 @@
-import React from "react";
-// React Router
-import { useParams } from "react-router-dom";
-// Apollo Client
-import { useQuery } from "@apollo/client";
-import { GET_EVENT } from "./queries";
+import React, { useEffect } from "react";
 // chakra-ui
 import {
-  VStack,
   Box,
   Flex,
   Heading,
   Text,
   Spinner,
-  StackDivider,
   Spacer,
+  Center,
 } from "@chakra-ui/react";
+// React Router
+import { useParams } from "react-router-dom";
+// Apollo Client
+import { useQuery } from "@apollo/client";
+import { GET_EVENT, PARTICIPANTS_SUBSCRIPTION } from "./queries";
+import Participants from "./Participants";
 
 function Event() {
   const { id } = useParams();
-  const { loading, error, data } = useQuery(GET_EVENT, {
+  const { loading, error, data, subscribeToMore } = useQuery(GET_EVENT, {
     variables: {
       id,
     },
   });
+
+  useEffect(() => {
+    if (!loading) {
+      subscribeToMore({
+        document: PARTICIPANTS_SUBSCRIPTION,
+        updateQuery: (prev, { subscriptionData }) => {
+          if (!subscriptionData.data) return prev;
+          const newparticipantItem = subscriptionData.data.participantCreated;
+          return {
+            event: {
+              ...prev.event,
+              participants: [...prev.event.participants, newparticipantItem],
+            },
+          };
+        },
+      });
+    }
+  }, [loading, subscribeToMore]);
+
   if (loading) {
     return (
-      <Spinner
-        thickness="4px"
-        speed="0.65s"
-        emptyColor="gray.200"
-        color="blue.500"
-        size="xl"
-      />
+      <Center>
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="blue.500"
+          size="xl"
+        />
+      </Center>
     );
   }
   if (error) return <div>{`Error! ${error.message}`}</div>;
 
   return (
-    <Box
-      border="1px"
-      borderColor="gray.200"
-      rounded="md"
-      minh="60px"
-      p="10px"
-      w="600px"
-    >
+    <Box border="1px" borderColor="gray.200" rounded="md" minh="60px" p="10px">
       <Flex>
-        <Box w="515px">
-          <Heading as="h4" size="md">
-            {data.event.title}
-          </Heading>
-        </Box>
-        <Box w="65px">
-          <Text fontSize="xs" align={"right"}>
-            {data.event.date.replaceAll("-", ".")}
-          </Text>
-        </Box>
+        <Heading as="h4" size="md">
+          {data.event.title}
+        </Heading>
+        <Spacer />
+        <Text fontSize="xs" align={"right"}>
+          {data.event.date.replaceAll("-", ".")}
+        </Text>
       </Flex>
       <Box>
         <Text fontSize="xs">{data.event.desc}</Text>
@@ -69,22 +80,7 @@ function Event() {
           Location: {data.event.location.name}
         </Text>
       </Flex>
-      <VStack
-        divider={<StackDivider borderColor="gray.200" />}
-        spacing={4}
-        align="stretch"
-        mt="20px"
-      >
-        <Heading as="h5" size="sm">
-          Participants ({data.event.participants.length})
-        </Heading>
-        {data.event.participants.length === 0 && (
-          <Box>There are no participants</Box>
-        )}
-        {data.event.participants.map((participant) => (
-          <Box key={participant.id}>{participant.user.username}</Box>
-        ))}
-      </VStack>
+      <Participants data={data} />
     </Box>
   );
 }

@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { pipe, filter } from "graphql-yoga";
 
 export const resolvers = {
   Subscription: {
@@ -6,6 +7,15 @@ export const resolvers = {
     eventCreated: {
       subscribe: (_, __, { pubSub }) => {
         return pubSub.subscribe("eventCreated");
+      },
+      resolve: (payload) => payload,
+    },
+    eventCount: {
+      subscribe: (_, __, { pubSub, db: { events } }) => {
+        setTimeout(() => {
+          pubSub.publish("eventCount", events.length);
+        });
+        return pubSub.subscribe("eventCount");
       },
       resolve: (payload) => payload,
     },
@@ -18,7 +28,13 @@ export const resolvers = {
     },
     // Participant
     participantCreated: {
-      subscribe: (_, __, { pubSub }) => {
+      subscribe: (_, { event_id }, { pubSub }) => {
+        if (event_id) {
+          return pipe(
+            pubSub.subscribe("participantCreated"),
+            filter((participant) => participant.event_id === event_id)
+          );
+        }
         return pubSub.subscribe("participantCreated");
       },
       resolve: (payload) => payload,
@@ -28,8 +44,9 @@ export const resolvers = {
     // Event
     createEvent: (_, { data }, { pubSub, db: { events } }) => {
       const event = { id: nanoid(), ...data };
-      events.push(event);
+      events.unshift(event);
       pubSub.publish("eventCreated", event);
+      pubSub.publish("eventCount", events.length);
       return event;
     },
     updateEvent: (_, { id, data }, { db: { events } }) => {

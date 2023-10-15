@@ -1,15 +1,15 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { Box, Center, Divider } from "@chakra-ui/react";
+import { Center, Divider, Container } from "@chakra-ui/react";
 import HeaderMenu from "../components/HeaderMenu";
 function DashboardLayout() {
   return (
     <Center>
-      <Box mt="20px" mb="20px">
+      <Container minW="250px" maxW="600px" m="20px">
         <HeaderMenu />
         <Divider mb="10px" />
         <Outlet />
-      </Box>
+      </Container>
     </Center>
   );
 }

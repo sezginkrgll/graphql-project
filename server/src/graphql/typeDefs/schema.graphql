@@ -130,8 +130,9 @@ type Mutation {
 type Subscription {
   # Event
   eventCreated: Event!
+  eventCount: Int!
   # User
   userCreated: User!
   # Participant
-  participantCreated: Participant!
+  participantCreated(event_id: ID): Participant!
 }
