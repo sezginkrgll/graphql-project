@@ -7,6 +7,8 @@ export const GET_EVENT = gql`
       title
       desc
       date
+      from
+      to
       user {
         id
         username

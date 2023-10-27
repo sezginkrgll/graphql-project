@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 // chakra-ui
 import {
   Box,
@@ -14,7 +14,7 @@ import { useParams } from "react-router-dom";
 // Apollo Client
 import { useQuery } from "@apollo/client";
 import { GET_EVENT, PARTICIPANTS_SUBSCRIPTION } from "./queries";
-import Participants from "./Participants";
+import ParticipantsList from "./Participants/ParticipantsList";
 
 function Event() {
   const { id } = useParams();
@@ -24,21 +24,26 @@ function Event() {
     },
   });
 
+  const shouldRunEffect = useRef(true);
+
   useEffect(() => {
-    if (!loading) {
-      subscribeToMore({
-        document: PARTICIPANTS_SUBSCRIPTION,
-        updateQuery: (prev, { subscriptionData }) => {
-          if (!subscriptionData.data) return prev;
-          const newparticipantItem = subscriptionData.data.participantCreated;
-          return {
-            event: {
-              ...prev.event,
-              participants: [...prev.event.participants, newparticipantItem],
-            },
-          };
-        },
-      });
+    if (shouldRunEffect.current) {
+      if (!loading) {
+        subscribeToMore({
+          document: PARTICIPANTS_SUBSCRIPTION,
+          updateQuery: (prev, { subscriptionData }) => {
+            if (!subscriptionData.data) return prev;
+            const newparticipantItem = subscriptionData.data.participantCreated;
+            return {
+              event: {
+                ...prev.event,
+                participants: [...prev.event.participants, newparticipantItem],
+              },
+            };
+          },
+        });
+        shouldRunEffect.current = false;
+      }
     }
   }, [loading, subscribeToMore]);
 
@@ -64,9 +69,14 @@ function Event() {
           {data.event.title}
         </Heading>
         <Spacer />
-        <Text fontSize="xs" align={"right"}>
-          {data.event.date.replaceAll("-", ".")}
-        </Text>
+        <Box minW="105px">
+          <Text fontSize="xs" align={"right"}>
+            {data.event.date.replaceAll("-", ".")}
+          </Text>
+          <Text fontSize="xs" align={"right"}>
+            from {data.event.from.slice(0, 5)} to {data.event.to.slice(0, 5)}
+          </Text>
+        </Box>
       </Flex>
       <Box>
         <Text fontSize="xs">{data.event.desc}</Text>
@@ -80,7 +90,7 @@ function Event() {
           Location: {data.event.location.name}
         </Text>
       </Flex>
-      <Participants data={data} />
+      <ParticipantsList data={data} />
     </Box>
   );
 }

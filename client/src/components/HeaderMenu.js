@@ -20,8 +20,8 @@ function HeaderMenu() {
       <ChakraLink
         _hover={{ borderBottom: "2px" }}
         as={NavLink}
-        to="#"
-        borderBottom={location.pathname === "#" ? "2px" : ""}
+        to="new"
+        borderBottom={location.pathname === "/new" ? "2px" : ""}
         mr="20px"
       >
         New Event
